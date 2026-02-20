@@ -1,17 +1,25 @@
 # Optimal RunTime Calculator
 
 ## Introduction
-This calculator calculates the time taken by the data to completely fine-tune the `Llama2-7b` model in an optimal manner.
-The time is reduced to greater extent when we use flash attention which needs A100 machine. 
-Hence it is better to use `A100` machine. 
+This calculator calculates the time taken by the data to completely fine-tune the `Llama2-7b` model in an optimal manner. The time is reduced to greater extent when we use flash attention which needs A100 machine. Hence it is better to use `A100` machine. 
 
 ## Setup
-```
+
+```sh
 pip install -r requirements.txt
 ```
 
 ## How to Run:
+
+### Help
+
+```sh
+python optimal_runtime_calculator.py --help
 ```
+
+### Command Line Arguments
+
+```sh
 python optimal_runtime_calculator.py \
          --hf_model_name_or_path NousResearch/Llama-2-7b-hf \
          --data_path ./sample-dataset.csv \
@@ -23,6 +31,6 @@ python optimal_runtime_calculator.py \
          --save_steps 3 \
          --eval_steps 3 \
          --max_length 1100 \
-         --padding True \
-         --truncation True
+         --padding \
+         --truncation
 ```

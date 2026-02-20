@@ -1,14 +1,10 @@
 # copied from https://github.com/lm-sys/FastChat/blob/main/fastchat/train/llama_flash_attn_monkey_patch.py
 
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 import logging
-
 import torch
-from torch import nn
-
 import transformers
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb
-
 from einops import rearrange
 from flash_attn import flash_attn_func
 
@@ -31,16 +27,24 @@ def forward(
         key_states = self.k_proj(hidden_states)
         value_states = self.v_proj(hidden_states)
 
-    query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-    key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-    value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+    query_states = query_states.view(
+        bsz, q_len, self.num_heads, self.head_dim
+    ).transpose(1, 2)
+    key_states = key_states.view(
+        bsz, q_len, self.num_key_value_heads, self.head_dim
+    ).transpose(1, 2)
+    value_states = value_states.view(
+        bsz, q_len, self.num_key_value_heads, self.head_dim
+    ).transpose(1, 2)
 
     kv_seq_len = key_states.shape[-2]
 
     if past_key_value is not None:
         kv_seq_len += past_key_value[0].shape[-2]
     cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-    query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+    query_states, key_states = apply_rotary_pos_emb(
+        query_states, key_states, cos, sin, position_ids
+    )
 
     if past_key_value is not None:
         # reuse k, v, self_attention
@@ -50,10 +54,13 @@ def forward(
     past_key_value = (key_states, value_states) if use_cache else None
 
     query_states, key_states, value_states = [
-        rearrange(x, "b h s d -> b s h d") for x in [query_states, key_states, value_states]
+        rearrange(x, "b h s d -> b s h d")
+        for x in [query_states, key_states, value_states]
     ]
 
-    query_states, key_states, value_states = [x.to(torch.bfloat16) for x in [query_states, key_states, value_states]]
+    query_states, key_states, value_states = [
+        x.to(torch.bfloat16) for x in [query_states, key_states, value_states]
+    ]
     # print(f"{query.shape=} {key.shape=} {value.shape=}")
     # below output will have shape (batch_size, seqlen, nheads, headdim)
     attn_output = flash_attn_func(query_states, key_states, value_states, causal=True)
@@ -67,7 +74,9 @@ def forward(
     attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
     attn_output = self.o_proj(attn_output)
     if output_attentions:
-        raise NotImplementedError("`output_attentions` is not supported when `use_flash_attn` is True")
+        raise NotImplementedError(
+            "`output_attentions` is not supported when `use_flash_attn` is True"
+        )
     attn_weights = None
 
     return attn_output, attn_weights, past_key_value
@@ -75,7 +84,9 @@ def forward(
 
 # Disable the transformation of the attention mask in LlamaModel as the flash attention
 # requires the attention mask to be the same as the key_padding_mask
-def _prepare_decoder_attention_mask(self, attention_mask, input_shape, inputs_embeds, past_key_values_length):
+def _prepare_decoder_attention_mask(
+    self, attention_mask, input_shape, inputs_embeds, past_key_values_length
+):
     # [bsz, seq_len]
     return attention_mask
 
@@ -87,7 +98,5 @@ def replace_llama_attn_with_flash_attn():
             "Flash attention is only supported on A100 or H100 GPU during training due to head dim > 64 backward."
             "ref: https://github.com/HazyResearch/flash-attention/issues/190#issuecomment-1523359593"
         )
-    transformers.models.llama.modeling_llama.LlamaModel._prepare_decoder_attention_mask = (
-        _prepare_decoder_attention_mask
-    )
+    transformers.models.llama.modeling_llama.LlamaModel._prepare_decoder_attention_mask = _prepare_decoder_attention_mask
     transformers.models.llama.modeling_llama.LlamaAttention.forward = forward

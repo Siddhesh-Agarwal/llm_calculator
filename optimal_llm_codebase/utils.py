@@ -9,12 +9,16 @@ import numpy as np
 import pandas as pd
 import torch
 from datasets import Dataset
-from peft import (LoraConfig, TaskType, get_peft_model,
-                  prepare_model_for_kbit_training)
+from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from peft.tuners.lora import LoraLayer
-from transformers import (LlamaForSequenceClassification, LlamaTokenizerFast,
-                          TrainerCallback, TrainerControl, TrainerState,
-                          TrainingArguments)
+from transformers import (
+    LlamaForSequenceClassification,
+    LlamaTokenizerFast,
+    TrainerCallback,
+    TrainerControl,
+    TrainerState,
+    TrainingArguments,
+)
 
 from llama_flash_attn_monkey_patch import replace_llama_attn_with_flash_attn
 
@@ -57,7 +61,6 @@ def tokenize_function(examples, tokenizer):
 
 
 def create_datasets(tokenizer, use_sfttrainer=False):
-
     # Repeating this data 3 times to increase the data size
     #   to show how much time it takes
     df = pd.read_csv("optimal_llm_codebase/bitcoin-sentiment-dataset.csv")
@@ -66,8 +69,8 @@ def create_datasets(tokenizer, use_sfttrainer=False):
     df.columns = columns
     df.rename(columns={"output": "labels", "input": "text"}, inplace=True)
 
-    text_to_num = {'Positive': 1, 'Negative': 0}
-    df['labels'] = df['labels'].apply(lambda x: text_to_num[x])
+    text_to_num = {"Positive": 1, "Negative": 0}
+    df["labels"] = df["labels"].apply(lambda x: text_to_num[x])
 
     train_rto_dataset = Dataset.from_pandas(df.loc[:10000])
     test_rto_dataset = Dataset.from_pandas(df.loc[10000:])
@@ -89,7 +92,6 @@ def create_datasets(tokenizer, use_sfttrainer=False):
 
 
 def create_and_prepare_model(args):
-
     # Flash attention is only supported on A100 or H100 GPU during training
     # due to head dim > 64 backward.
     # Refernce: https://github.com/HazyResearch/flash-attention/issues/190#issuecomment-1523359593 # noqa

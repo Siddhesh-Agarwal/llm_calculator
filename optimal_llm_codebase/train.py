@@ -74,8 +74,7 @@ def main(arguments):
                     weight=torch.tensor([2.35, 0.64], device="cuda")
                 )
                 loss = loss_fct(
-                    logits.view(-1, self.model.config.num_labels),
-                    labels.view(-1)
+                    logits.view(-1, self.model.config.num_labels), labels.view(-1)
                 )
 
                 return (loss, outputs) if return_outputs else loss
@@ -135,10 +134,7 @@ def main(arguments):
     )
     # trainer.accelerator.print(f"{trainer.model}")
 
-    trainer.accelerator.print(
-        "Number of steps in 1 epochs: ",
-        num_of_steps_in_1_epoch
-    )
+    trainer.accelerator.print("Number of steps in 1 epochs: ", num_of_steps_in_1_epoch)
 
     trainer.accelerator.print(
         "Number of datapoints parsed in 1 step: ",
@@ -169,10 +165,7 @@ def main(arguments):
     state_dict = trainer.accelerator.get_state_dict(trainer.deepspeed)
     unwrapped_model = trainer.accelerator.unwrap_model(trainer.deepspeed)
     if trainer.accelerator.is_main_process:
-        unwrapped_model.save_pretrained(
-            arguments.output_dir,
-            state_dict=state_dict
-        )
+        unwrapped_model.save_pretrained(arguments.output_dir, state_dict=state_dict)
     trainer.accelerator.wait_for_everyone()
 
     df = pd.DataFrame(trainer.state.log_history)
@@ -224,7 +217,7 @@ parser.add_argument(
     type=int,
     default=64,
     help="Number of updates steps to accumulate the gradients for, "
-         "before performing a backward/update pass.",
+    "before performing a backward/update pass.",
 )
 parser.add_argument(
     "--optim", type=str, default="adafactor", help=" The optimizer to use."
@@ -240,13 +233,10 @@ parser.add_argument(
     type=float,
     default=0.03,
     help="Ratio of total training steps used for a linear "
-         "warmup from 0 to learning_rate.",
+    "warmup from 0 to learning_rate.",
 )
 parser.add_argument(
-    "--lr_scheduler_type",
-    type=str,
-    default="linear",
-    help="The scheduler type to use."
+    "--lr_scheduler_type", type=str, default="linear", help="The scheduler type to use."
 )
 parser.add_argument(
     "--label_name",
@@ -255,10 +245,7 @@ parser.add_argument(
     help="The name of the target label.",
 )
 parser.add_argument(
-    "--num_train_epochs",
-    type=str,
-    default="linear",
-    help="The scheduler type to use."
+    "--num_train_epochs", type=str, default="linear", help="The scheduler type to use."
 )
 parser.add_argument(
     "--use_gradient_checkpointing",
@@ -267,17 +254,14 @@ parser.add_argument(
     help="Gradient checkpointing to save memory at the expense of slower backward pass.",
 )
 parser.add_argument(
-    "--bf16",
-    type=bool,
-    default=True,
-    help="The scheduler type to use."
+    "--bf16", type=bool, default=True, help="The scheduler type to use."
 )
 parser.add_argument(
     "--output_dir",
     type=str,
     default="output",
     help="The output directory where the model predictions "
-         "and checkpoints will be written.",
+    "and checkpoints will be written.",
 )
 parser.add_argument(
     "--save_steps",
